@@ -15,8 +15,10 @@ execute:
   echo: true
   warning: false
   message: false
+editor: 
+  markdown: 
+    wrap: 72
 ---
-
 
 ```{r}
 #| label: setup
@@ -35,27 +37,35 @@ knitr::opts_chunk$set(
 
 ## Before your start the assignment
 
-- Update the header - put your name in the `author` argument and put today's date in the `date` argument.
-- Click the "Render" button in RStudio and then open the rendered `2-hw2.html` page.
-- Then go back and try changing the `theme` argument in the header to something else - you can see other available themes [here](https://quarto.org/docs/output-formats/html-themes.html). Notice the difference when you render now!
+- Update the header - put your name in the `author` argument and put
+  today's date in the `date` argument.
+- Click the "Render" button in RStudio and then open the rendered
+  `2-hw2.html` page.
+- Then go back and try changing the `theme` argument in the header to
+  something else - you can see other available themes
+  [here](https://quarto.org/docs/output-formats/html-themes.html).
+  Notice the difference when you render now!
 
 ## Overview of HW2
 
 Create a data visualization that helps answer the question:
 
-> **How have the number and cost of billion-dollar disasters in the US changed over time?**
+> **How have the number and cost of billion-dollar disasters in the US
+> changed over time?**
 
-You will use the NOAA Billion-Dollar Disaster dataset to explore how visual encoding choices (e.g., color, position, length) help communicate trends clearly and effectively.
-
+You will use the NOAA Billion-Dollar Disaster dataset to explore how
+visual encoding choices (e.g., color, position, length) help communicate
+trends clearly and effectively.
 
 **Skills practiced**:
 
 - Downloading and importing real-world data from a public source (NOAA)
 - Wrangle and explore a real-world dataset using tidyverse
-- Identify appropriate visual encodings based on variable types and goals
+- Identify appropriate visual encodings based on variable types and
+  goals
 - Create a clear and effective time-series visualization with ggplot2
-- Apply design principles (titles, colors, themes, alt text) for accessibility and clarity
-
+- Apply design principles (titles, colors, themes, alt text) for
+  accessibility and clarity
 
 ### Load Required Packages
 
@@ -65,189 +75,460 @@ library(janitor)
 # load other packages as you see fit but remember to add comments to explain what each package does
 ```
 
-
 ## Q1: Prepare the data
 
 Following these steps to download and read in the dataset:
 
-1. Download the dataset from [NOAA](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.nodc:0209268). Under "Access" tab, choose the HTTPS option to download the data. Scroll to the bottom of the list to download the **most recent published version**. Read more about the dataset [here](https://www.ncei.noaa.gov/access/billions/).
+1.  Download the dataset from
+    [NOAA](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.nodc:0209268).
+    Under "Access" tab, choose the HTTPS option to download the data.
+    Scroll to the bottom of the list to download the **most recent
+    published version**. Read more about the dataset
+    [here](https://www.ncei.noaa.gov/access/billions/).
 
-2. Place the downloaded CSV file `events-US-1980-2024-Q4.csv` into your `data/` folder in your HW repository. You will notice there is a graph that comes with the data, we will circle back to it later.
+2.  Place the downloaded CSV file `events-US-1980-2024-Q4.csv` into your
+    `data/` folder in your HW repository. You will notice there is a
+    graph that comes with the data, we will circle back to it later.
 
-3. Add your data/ folder to .gitignore to avoid pushing data to GitHub.
+3.  Add your data/ folder to .gitignore to avoid pushing data to GitHub.
 
-4. Read in the CSV file using `read_csv()`
+4.  Read in the CSV file using `read_csv()`
 
-```{r, eval=FALSE}
+```{r}
 # remove the eval=FALSE when you render quarto document
 df_disasters <- read_csv("data/events-US-1980-2024-Q4.csv", skip = 2) |>
   janitor::clean_names()
 # the skip argument is used to skip the first two rows of the CSV file, which contain metadata about the dataset.
 ```
 
-5. Skim through the dataset to get familiar with the variable names, especially:
+5.  Skim through the dataset to get familiar with the variable names,
+    especially:
 
 - `disaster`: the type of disaster (e.g., flood, drought, etc.)
 - `begin_date`: the date when the disaster began
 - `end_date`: the date when the disaster ended
-- `cpi_adjusted_cost`: the total damages caused by the disaster (in billions of dollars)
+- `cpi_adjusted_cost`: the total damages caused by the disaster (in
+  billions of dollars)
 - `deaths`: the number of deaths caused by the disaster
 
-6. Create a new column `year` that extracts the year from the `begin_date` column. You can use the `lubridate` package to do this.
+6.  Create a new column `year` that extracts the year from the
+    `begin_date` column. You can use the `lubridate` package to do this.
 
-```{r, eval=FALSE}
+```{r}
 # remove the eval=FALSE when you render quarto document
 df_disasters <- df_disasters |>
   mutate(year = lubridate::year(ymd(begin_date)))
 ```
 
-7. Explore the dataset and answer these questions:
+7.  Explore the dataset and answer these questions:
 
-- Are there any missing or zero values in the cost or deaths columns? How might they affect your visualizations?
+- Are there any missing or zero values in the cost or deaths columns?
+  How might they affect your visualizations?
 - What are the top 5 most common disaster types?
-- Calculate the total CPI-adjusted cost of disasters per year. Identify the top 3 most expensive years.
+- Calculate the total CPI-adjusted cost of disasters per year. Identify
+  the top 3 most expensive years.
 
 ```{r}
 #your code here
+# counting the number of common types of disaster 
+top5_disaster <- df_disasters |> 
+  count(disaster) |> #count the disasters
+  arrange(desc(n)) |>  #arrange in descending order to keep most frequent to least frequent disaster
+  slice_head(n = 5) #keep the top 5 rows
+top5_disaster
+
+```
+
+
+
+```{r}
+#your code here
+# In the code below I am trying to identify the top 3 expensive years using cpi_adjusted_cost
+top3_expensive_years <- df_disasters |> 
+  group_by(year) |>  # group by year
+  summarise(total_CPI_adjusted_cost = sum(cpi_adjusted_cost, na.rm = TRUE)) |>  #summarize cpi_adjusted_cost
+  arrange(desc(total_CPI_adjusted_cost)) |> #arrange total summary in descending order to keep most expensive to least expensive 
+  slice_head( n = 3) #keeping the top 3 rows
+top3_expensive_years
 ```
 
 ::: {.callout-note title="Your Answer"}
-- Missing data:
-- 5 most disaster types:
-- 3 most expensive years by CPI-adjusted cost:
+- Missing data: There are 101 missing data in the deaths columns only
+
+- 5 most disaster types: Severe Storm (1st), Tropical Cyclone (2nd),
+  Flooding (3rd), Drought(4th), Winter Storm (5th)
+
+- 3 most expensive years by CPI-adjusted cost: 2017, 2005 and 2022 are
+  the 3 most expensive years by CPI-adjusted cost.
 :::
-
-
 
 ## Q2: Build your visualization
 
-Create a data visualization that summarizes trends over time (year or decade) in the frequency and/or cost of disasters.
+Create a data visualization that summarizes trends over time (year or
+decade) in the frequency and/or cost of disasters.
 
 Your final visualization should:
 
 - Use data from 1980 to 2024 only
 
-- Include a title (short, descriptive), subtitle (main takeaway), caption (e.g., “Data: NOAA Billion-Dollar Disasters (accessed 2025)”)
+- Include a title (short, descriptive), subtitle (main takeaway),
+  caption (e.g., “Data: NOAA Billion-Dollar Disasters (accessed 2025)”)
 
-- Apply strategies for highlighting patterns or trends (e.g., highlighting recent years, distinguishing types of disasters)
+- Apply strategies for highlighting patterns or trends (e.g.,
+  highlighting recent years, distinguishing types of disasters)
 
 - Use custom colors rather than ggplot defaults
 
 - Use a clean, polished theme
 
-- Include at least one theme adjustments (e.g., axis labels, legend position, font size) to improve readability/visual appeal
+- Include at least one theme adjustments (e.g., axis labels, legend
+  position, font size) to improve readability/visual appeal
+
+## comment on my 2 answer:
+
+I did not succeed to create a single visualization with trend and use
+highlight package to highlight trend. I first visualize disaster
+observed per year and then created another visualization to display cost
+per year
 
 ```{r}
-#your code here
+
+Summary_disaster <- df_disasters |>
+  filter(year >= 1980, year <= 2024) |> #filter year 1980-2024
+  group_by(year, disaster) |> #group disaster per to display observation per year
+  summarise( #summarise number of cpi_adjusted_cost  per year
+    count          = n(), #count the number of disaster per year
+    total_cpi_cost = sum(cpi_adjusted_cost, na.rm = TRUE), # summarize the total cost per event
+    .groups = "drop" #ungroup after summarizing 
+  )
+
+Prefer_colors <- c( #I had issue with scale_manual, so I am choosing the color this way and then use the object in it
+  "Drought"          = "goldenrod",  
+  "Flooding"         = "blue",
+  "Freeze"           = "turquoise",
+  "Severe Storm"     = "limegreen",   # bright green
+  "Tropical Cyclone" = "gold",
+  "Wildfire"         = "orange",
+  "Winter Storm"     = "purple"   
+)
+
+ggplot( #use ggplot to visualize
+  Summary_disaster ,
+  aes(x = year, y = count, group = disaster, fill = disaster) #representing x and y axis, then fill disaster observed with a color
+) +
+  geom_col() +
+  scale_fill_manual(values = Prefer_colors, name = "Disaster type") + #manually choosing the color, use here the object created obove
+  scale_x_continuous(breaks = seq(1980, 2024, by = 2)) + #make all year visible on x axis, year is displayed per 2 year interval
+  labs(
+    x        = "Year",
+    y        = "Number of events",
+    title    = "United States Disasters Events 1980–2024",
+    subtitle = "More Frequent Disaster from 2011 to 2024",
+    caption  = "Data: NOAA Billion-Dollar Disasters (accessed 2025)" #adding a caption
+  ) +
+  theme_light() +
+  theme(
+    axis.text.x      = element_text(angle = 45, hjust = 1),
+    legend.position  = "right" #adding legend to the right
+  )
 ```
 
-What do you notice about the trends over time in the frequency and/or cost of disasters? Anything unexpected?
+
+
+```{r}
+#My code to show annual cost trend
+CPI_Year_total <- Summary_disaster |>
+  group_by(year) |>  
+  summarise(
+    total_cpi_cost = sum(total_cpi_cost), #summarize cost per year
+    .groups = "drop"
+  )
+CPI_Year_total #to view total cost per year
+ggplot(CPI_Year_total, aes(x = year, y = total_cpi_cost)) +
+  geom_line(linewidth = 1)+ #use geom_line to viualize trend
+  geom_point(size =2) + #use geom_point to easily identify costs
+    scale_x_continuous(breaks = seq(1980, 2024, by = 5)) + #use this to display year per 5 year interval
+   labs(
+    title = "United States Billion-Dollar Disasters Events 1980–2024 (CPI-Adjusted)",
+    x = "Year",
+    y = "Total CPI-Adjusted Cost in $ Billions",
+    subtitle = "More expensive Disasters starting from 2005 to 2024",
+     caption  = "Data: NOAA Billion-Dollar Disasters (accessed 2025)", #adding a caption
+  ) +
+  theme_bw() +
+  theme(axis.title.x = element_text(
+    angle = 50,
+    vjust = -0.5,
+    hjust = -0.5,
+    size = 7
+  ))
+```
+
+What do you notice about the trends over time in the frequency and/or
+cost of disasters? Anything unexpected?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+-I notice that by 2005 till 2024, the US spent more money in disaster
+cost than year before 2005.
+
+-2017 has been the most expensive year
+
+-The observed disaster since 1980 are: Drought, Flooding, Freeze, Severe
+Storm, Tropical Cyclone, Wildfire, Winter Storm
+
+-From 2011 to 2024, we notice up to 10 disaster per year
+
+-drought, severe storm, flooding, tropical cyclone are the most frequent
+disaster since 2011.
 :::
 
 ## Q3: Reflection
 
-a. What are your variables of interest and what kinds of data (e.g., numeric, categorical, ordered, etc.) are they?
+a.  What are your variables of interest and what kinds of data (e.g.,
+    numeric, categorical, ordered, etc.) are they?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+The variable of interest from the df_disaster dataset for the HW are:
+year, disaster, cpi_adjusted cost. year is a numeric data and ordered
+from 1980 to 2024; cpi_adjusted is a continuous numeric data and
+disaster is a nominal categorical.
 :::
 
-b. How did you decide which type of graphic form was best suited for answering the question?
-What alternative graphic forms could you have used instead? Why did you settle on this particular form?
+b.  How did you decide which type of graphic form was best suited for
+    answering the question? What alternative graphic forms could you
+    have used instead? Why did you settle on this particular form?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+- the question is about trend over time and that gave me an idea of
+  graph to use
+
+-I decided to used geom_col (to make stacked bar chart) because I have a
+summary data and it is also suitable to visualize trend over time
+(reference to class discussion).
+
+-I used line plot to visualize annual cost over time because line plot
+is suitable to visualize numeric values over time. line display position
+which is also more effective to show numeric data. With the line chart,
+we can easily see the trend of cost over time which might be difficult
+for other chart to display
+
+-I could have used area charts to show the trend of annual disaster
+cost.
+
+-I could have also use separate bar chart to display disaster observed
+per year from 1980 to 2024
 :::
 
-c. What modifications did you make to this viz to improve readability and accessibility?
+c.  What modifications did you make to this viz to improve readability
+    and accessibility?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+- I used legend to name what each bar color represent in the graph.
+
+- I used theme_light to remove the default gray background and make
+  background clean
+
+-I used appropriate color that all people can see; I avoid red-green,
+red-brown combination
+
+-I displayed year on x axis per 2 year interval so that people can
+easily see years.
+
+-On my second graph, I used theme_bw to whithe background and have grid
+lines instead of using the default theme
+
+-I used geom_point to display where cost it observed, for example with
+that we can easily see the minimum cost and year where maximum cost is
+observed.
+
+-I added title on x and y axis and title to show what the graph is about
+and what is being observed and subtitle as takeaway
+
+-To highlight to data source, I added caption to show where the data is
+from and when it was accessed.
 :::
 
-d. Is there anything you wanted to implement but didn’t know how? If so, describe it.
+d.  Is there anything you wanted to implement but didn’t know how? If
+    so, describe it.
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+-I wanted to do a single graph where we can see the disaster per year
+and then the annual cost.
+
+-I don't know how to do the second y and combination of geom_col and
+geom_line here was challenging.
+
+-I first count the type number of event per year with its cost and then
+calculate total cost per year.
+
+-I don't know how to move along with the two dataset with ggplot since
+the second dataset does not contain disaster column.
+
+-Since I did find a solution, that is why I did 2 graphs. because of
+that I have not be able to highlight patterns or trend.
 :::
 
 ## Q4: Critique the original graph from NOAA
 
-![NOAA Billion-Dollar Disaster Events (1980–2024)](image/1980-2024-billion-dollar-disaster-time-series.png)
+![NOAA Billion-Dollar Disaster Events
+(1980–2024)](image/1980-2024-billion-dollar-disaster-time-series.png)
 
-This plot appears on NOAA’s official Billion-Dollar Disaster website and summarizes annual disaster frequency and cost.
+This plot appears on NOAA’s official Billion-Dollar Disaster website and
+summarizes annual disaster frequency and cost.
 
-a. Describe the graphic
+a.  Describe the graphic
 
 - What type(s) of chart(s) are used?
-- What variables are encoded? How are they mapped to visual channels (e.g., position, color, size)?
+- What variables are encoded? How are they mapped to visual channels
+  (e.g., position, color, size)?
 - What is the intended takeaway?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+-They used stacked bar chart to represent specific disaster trend per
+year.
+
+- They multiple line charts to display annual cost over time, black line
+  to show 5 year average cost and a grey line to show costs 95 % CI.
+
+-We have several variables encoded : year from 1980 to 2024, disaster
+frequency (specify per year), annual frequency CPI_adjusted costs in US
+billion, 5 years average cost,
+
+- Position: on the x axis, each bar represent well the year and y axis,
+  they used line style to show where each value is (number of events and
+  cost in billions); they filled each bar with different color to show
+  the position of the disaster in the year
+
+- size is appropriate and use of different appropriate color help
+  everyone to read the graph.
+
+-The intended to communicate the frequency of disasters and its economic
+impact for the country from 1980 to 2024.
 :::
 
-b. Assess strengths
+b.  Assess strengths
 
-- What aspects of the chart help communicate the intended message clearly?
-- Is there anything done particularly well in terms of accessibility, color use, or labeling?
+- What aspects of the chart help communicate the intended message
+  clearly?
+- Is there anything done particularly well in terms of accessibility,
+  color use, or labeling?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+-Title, legend, label of x and y axis help communicate the main message
+of the graph
+
+- They used excellent color, font size, and labeling which improve
+  readability and accessibility of the graph.
+
+-They particularly made the graph interactive which is great for
+accessibility. Anyone who move his/her PC mouse to specific year will
+have detail about the number of each disaster in that year, its costs,
+combined cost and 95 % CI.
 :::
 
-c. Assess limitations
+c.  Assess limitations
 
-- What elements of the chart are **confusing, cluttered, or potentially misleading**?
+- What elements of the chart are **confusing, cluttered, or potentially
+  misleading**?
 - Are any visual encodings hard to interpret?
 - Does the chart overcomplicate the message or try to show too much?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+-The NOAA logo in the background is not visible, they could have added a
+source - It is hard to interpret the 95% CI they add on the graph, it
+may mislead general population reading the graph. - The stacked bar may
+be hard for the general population to identify number of disaster in
+year unless they click on it. but, they will not have that chance if the
+graph is printed.
 :::
 
-d. Recommend improvements
+d.  Recommend improvements
 
-- Suggest **2–3 specific changes** that would improve the effectiveness of the chart.
-- Would you consider separating out the lines from the stacked bars? Using interactivity? Changing the layout?
+- Suggest **2–3 specific changes** that would improve the effectiveness
+  of the chart.
+- Would you consider separating out the lines from the stacked bars?
+  Using interactivity? Changing the layout?
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+- I would suggest the removal of 95 % CI
+- I would suggest them to add a source
+- Yes, I would consider separating out from stacked bars. They could
+  have a separate graph to show annual cost. Since it a web graphic,
+  they could a tab to display that.
 :::
-
 
 ## BONUS: Create an alternative data visualization from the dataset
 
-- Use the from Data to Viz tool [here](https://www.data-to-viz.com/) to help determine graph types you can use that are different from what you have implemented above
-- Create a new visualization that uses a different type of graph than the one you created in Q2.
+- Use the from Data to Viz tool [here](https://www.data-to-viz.com/) to
+  help determine graph types you can use that are different from what
+  you have implemented above
+- Create a new visualization that uses a different type of graph than
+  the one you created in Q2.
 
-```{r} 
+```{r}
 #your code here
+CPI_Year_total <- Summary_disaster |>
+  group_by(year) |>  
+  summarise(
+    total_cpi_cost = sum(total_cpi_cost), #summarize cost per year
+    .groups = "drop"
+  )
+CPI_Year_total #to view total cost per year
+ggplot(CPI_Year_total, aes(x = year, y = total_cpi_cost)) +
+  geom_area(fill = "blue", alpha = 0.5)+ #creating area 
+  geom_line(linewidth = 1, color = "yellow")+ #use geom_line to viualize trend
+  geom_point(size =2, color = "red") + #use geom_point to easily identify costs
+    scale_x_continuous(breaks = seq(1980, 2024, by = 5)) + #use this to display year per 5 year interval
+   labs(
+    title = "United States Billion-Dollar Disasters Events 1980–2024 (CPI-Adjusted)",
+    x = "Year",
+    y = "Total CPI-Adjusted Cost in $ Billions",
+    subtitle = "More expensive Disasters starting from 2005 to 2024",
+     caption  = "Data: NOAA Billion-Dollar Disasters (accessed 2025)", #adding a caption
+  ) +
+  theme_bw() +
+  theme(axis.title.x = element_text(
+    angle = 50,
+    vjust = -0.5,
+    hjust = -0.5,
+    size = 7
+  ))
+
 ```
 
+
 ::: {.callout-note title="Your Reflection"}
-Type your reflection here.
+
+I have use area chart to display disaster cost from 1980 to 2024. 
+Overall, I spent a lot of time to do this HW than ususal. The second graph sometime,
+I don't why sometime I to zoom out or in before I see it well.
 :::
 
 ## How I used GenAI?
-Describe how GenAI is used in producing this homework, include prompt, date, model version, and link to chat history.
+
+Describe how GenAI is used in producing this homework, include prompt,
+date, model version, and link to chat history.
 
 ::: {.callout-note title="Your Answer"}
-Type your response here.
+I asked Google Gemini pro about the color observed on NOAA website, how to display the 
+cost and disaster on a single graph etc.
+
+AI chart here: https://gemini.google.com/share/d59e770befe6
+
+I also read some example from these book to guide my work:
+R for Data Science
+Intro to data analysis with R:
+https://datawithr.com/
+
 :::
 
 ## Save and Push Your Work
 
-Remember to save your `.qmd` and render the HTML output before committing to GitHub.
+Remember to save your `.qmd` and render the HTML output before
+committing to GitHub.
 
 ```{bash eval = FALSE}
 git add 2-hw2.qmd 2-hw2.html
 git commit -m "Complete Homework 2"
 git push
 ```
-
-
-
